@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 from typing import Optional, Dict, Any
 import yaml
-from git import Repo, GitCommandError
+from git import Repo, GitCommandError, RemoteProgress
 from git.exc import InvalidGitRepositoryError
 import logging
 
@@ -19,6 +19,61 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+
+class CloneProgress(RemoteProgress):
+    """Progress handler for git clone operations."""
+
+    def __init__(self):
+        super().__init__()
+        self.last_percent = -1
+
+    def update(self, op_code, cur_count, max_count=None, message=''):
+        """
+        Update progress information.
+
+        Args:
+            op_code: Operation code
+            cur_count: Current count of items processed
+            max_count: Maximum count of items to process
+            message: Progress message
+        """
+        if max_count:
+            percent = int((cur_count / max_count) * 100)
+            if percent != self.last_percent:
+                self.last_percent = percent
+
+                # Get operation name
+                op_name = self._get_op_name(op_code)
+
+                # Create progress bar
+                bar_length = 40
+                filled_length = int(bar_length * cur_count / max_count)
+                bar = '=' * filled_length + '-' * (bar_length - filled_length)
+
+                # Print progress
+                print(f'\r{op_name}: [{bar}] {percent}% ({cur_count}/{max_count})', end='', flush=True)
+
+                if percent == 100:
+                    print()  # New line when complete
+
+    def _get_op_name(self, op_code):
+        """Get human-readable operation name from op_code."""
+        # RemoteProgress operation codes
+        if op_code & RemoteProgress.COUNTING:
+            return "Counting objects"
+        elif op_code & RemoteProgress.COMPRESSING:
+            return "Compressing objects"
+        elif op_code & RemoteProgress.RECEIVING:
+            return "Receiving objects"
+        elif op_code & RemoteProgress.RESOLVING:
+            return "Resolving deltas"
+        elif op_code & RemoteProgress.FINDING_SOURCES:
+            return "Finding sources"
+        elif op_code & RemoteProgress.CHECKING_OUT:
+            return "Checking out files"
+        else:
+            return "Processing"
 
 
 class GitRepoManager:
@@ -132,10 +187,14 @@ class GitRepoManager:
             logger.info(f"Cloning repository from {self.repo_url}")
             authenticated_url = self._get_authenticated_url()
 
+            # Create progress handler
+            progress = CloneProgress()
+
             self.repo = Repo.clone_from(
                 authenticated_url,
                 self.target_dir,
-                branch=self.branch
+                branch=self.branch,
+                progress=progress
             )
 
             # Configure git user for commits
