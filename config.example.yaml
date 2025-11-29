@@ -1,0 +1,27 @@
+# Git Repository Manager Configuration File
+# Copy this file to config.yaml and fill in your details
+
+# Repository Configuration
+repository:
+  url: "https://github.com/username/repository.git"
+  target_directory: "./cloned_repo"
+  branch: "main"  # default branch to work with
+
+# Credentials
+# Option 1: Username and Password/Personal Access Token
+credentials:
+  username: "your_username"
+  password: "your_personal_access_token"  # Use Personal Access Token for better security
+
+# Option 2: SSH Key (if using SSH URL)
+# ssh_key_path: "~/.ssh/id_rsa"
+
+# Git User Configuration (for commits)
+git_user:
+  name: "Your Name"
+  email: "your.email@example.com"
+
+# Optional: Commit Settings
+commit_settings:
+  auto_add_all: true  # Automatically add all changes before commit
+  default_commit_message: "Auto commit"
